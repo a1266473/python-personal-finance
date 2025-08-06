@@ -7,6 +7,9 @@ import matplotlib
 import os
 matplotlib.use('agg')
 
+if not os.path.exists('static'):
+    os.makedirs('static')
+
 app = Flask(__name__)
 database = 'datafile.db'
 
@@ -190,3 +193,5 @@ def submit_stock():
 if __name__ == '__main__':
     port = int(os.environ.get('PORT', 5000))  # 從環境變數讀取 PORT
     app.run(host='0.0.0.0', port=port)
+
+app.config['PROPAGATE_EXCEPTIONS'] = True
