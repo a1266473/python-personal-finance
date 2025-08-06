@@ -94,7 +94,10 @@ def home():
                            'rate_of_return':rate_of_return})
 
     for stock in stock_info:
-        stock['value_percentage'] = round(stock['total_value'] * 100 / total_stock_value,2)
+        if total_stock_value > 0:
+            stock['value_percentage'] = round(stock['total_value'] * 100 / total_stock_value, 2)
+        else:
+            stock['value_percentage'] = 0
     
     # 繪製股票圓餅圖
     if len(unique_stcok_list) != 0:
