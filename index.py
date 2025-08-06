@@ -182,7 +182,11 @@ def submit_stock():
     return redirect('/')
 #print(stock_id, stock_num, stock_price, processing_fee , tax , date)
 
-if __name__ == '__main__':
-    app.run(debug=True)
+# if __name__ == '__main__':
+#     app.run(debug=True)
 # 讓你「直接執行這支程式時」才會啟動伺服器（app.run()）
 # 如果這支檔案是被其他檔案引用（import），就不會自動啟動 Flask 伺服器
+
+if __name__ == '__main__':
+    port = int(os.environ.get('PORT', 5000))  # 從環境變數讀取 PORT
+    app.run(host='0.0.0.0', port=port)
