@@ -37,10 +37,15 @@ def home():
         taiwanese_dollars += data[1]
         us_dollars += data[2]
     # 獲取匯率資訊
-    r = requests.get('https://tw.rter.info/capi.php')
-    currency = r.json()
-    total = math.floor(taiwanese_dollars + 
-                       us_dollars * currency['USDTWD']['Exrate'])
+    try:
+        r = requests.get('https://tw.rter.info/capi.php', timeout=10)
+        currency = r.json()
+        usd_to_twd = currency['USDTWD']['Exrate']
+    except Exception as e:
+        usd_to_twd = 32  # 給一個預設匯率值
+        print("匯率抓取錯誤:", e)
+    total = math.floor(taiwanese_dollars + us_dollars * usd_to_twd)
+
     
     # 取得所有股票資訊
     result2 = cursor.execute('select * from stock')
@@ -64,16 +69,24 @@ def home():
             shares += d[2]
             stock_cost += d[2] * d[3] + d[4] + d[5]
         # 取得目前股價
-        url = 'https://www.twse.com.tw/exchangeReport/STOCK_DAY?response=json&stockNo=' + stock
-        response = requests.get(url)
-        data = response.json()
-        price_array = data['data']
-        current_price = float(price_array[len(price_array) - 1][6].replace(',', ''))
+        try:
+            url = 'https://www.twse.com.tw/exchangeReport/STOCK_DAY?response=json&stockNo=' + stock
+            response = requests.get(url)
+            data = response.json()
+            price_array = data['data']
+            current_price = float(price_array[len(price_array) - 1][6].replace(',', ''))
+        except Exception as e:
+            print("取得股價失敗：", e)
+            current_price = 0.0
         # 單一股票總市值
         total_value = int(current_price * shares)
         total_stock_value += total_value
+        # 這裡印出除錯資訊
+        print('current_price:', current_price)
+        print('shares:', shares)
+        print('stock_cost:', stock_cost)
         # 單一股票平均成本
-        average_cost = round(stock_cost / shares , 2)
+        average_cost = round(stock_cost / shares , 2) if shares != 0 else 0
         # 單一股票報酬率
         rate_of_return = round((total_value - stock_cost) * 100 / stock_cost , 2)
         stock_info.append({'stock_id': stock,'stock_cost': stock_cost, 'total_value':total_value, 
@@ -91,6 +104,7 @@ def home():
         ax.pie(sizes,labels = labels,autopct = None,shadow = None)
         fig.subplots_adjust(top=1, bottom=0,right=1,left=0,hspace=0,wspace=0)
         plt.savefig('static/piechart.jpg',dpi=200)
+        plt.close(fig)
     else:
         try:
             os.remove('static/piechart.jpg')
@@ -98,18 +112,18 @@ def home():
             pass
 
     # 繪製股票現金圓餅圖
-    if us_dollars != 0 or taiwanese_dollars != 0 or total_stock_value != 0 :
-        labels = ('USD','TWD','Stock')
-        sizes = (us_dollars * currency['USDTWD']['Exrate'],taiwanese_dollars,total_stock_value)
-        fig, ax = plt.subplots(figsize=(6,5))
-        ax.pie(sizes,labels = labels,autopct = None,shadow = None)
-        fig.subplots_adjust(top=1, bottom=0,right=1,left=0,hspace=0,wspace=0)
-        plt.savefig('static/piechart2.jpg',dpi=200)
-    else:
-        try:
-            os.remove('static/piechart2.jpg')
-        except:
-            pass
+    # if us_dollars != 0 or taiwanese_dollars != 0 or total_stock_value != 0 :
+    #     labels = ('USD','TWD','Stock')
+    #     sizes = (us_dollars * currency['USDTWD']['Exrate'],taiwanese_dollars,total_stock_value)
+    #     fig, ax = plt.subplots(figsize=(6,5))
+    #     ax.pie(sizes,labels = labels,autopct = None,shadow = None)
+    #     fig.subplots_adjust(top=1, bottom=0,right=1,left=0,hspace=0,wspace=0)
+    #     plt.savefig('static/piechart2.jpg',dpi=200)
+    # else:
+    #     try:
+    #         os.remove('static/piechart2.jpg')
+    #     except:
+    #         pass
 
     data = {'show_pic_1' : os.path.exists('static/piechart.jpg'),'show_pic_2' : os.path.exists('static/piechart2.jpg'),
         'total':total , 'currency':currency['USDTWD']['Exrate'] ,
